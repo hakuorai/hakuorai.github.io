@@ -1,0 +1,236 @@
+<!doctype html>
+<html>
+    <head>
+        <meta charset="utf-8">
+        <title>Gravity(Sun)</title>
+    </head>
+    <script src="pixi/pixi.min.js">
+    </script>
+    <style>* {padding: 0; margin: 0}</style>
+    <body>
+        <script type="text/javascript">
+            // Create the application helper and add its render target to the page
+            let app = new PIXI.Application({ width: 512, height: 512, 
+                antalias: true, backgroundColor: 0x2F4F4F });
+            document.body.appendChild(app.view);
+
+            // 填充整个窗口
+            app.renderer.view.style.position = "absolute";
+            app.renderer.view.style.display = "block";
+            app.renderer.autoResize = true;
+            app.renderer.resize(window.innerWidth, window.innerHeight);
+
+            // 创建space为天体容器
+            let space = new PIXI.Container();
+            space.y = 60;
+            app.stage.addChild(space);
+
+            space.interactive = true;
+
+            // 为space创建背景
+            let spaceBg = new PIXI.Graphics();
+            spaceBg.beginFill(0);
+            spaceBg.drawRect(0, 0, window.innerWidth, window.innerHeight-space.y);
+            spaceBg.endFill();
+            space.addChild(spaceBg);
+
+            // 为space创建蒙版
+            mask = new PIXI.Graphics();
+            mask.beginFill(0);
+            mask.drawRect(0, space.y, window.innerWidth, window.innerHeight-space.y);
+            mask.endFill(0);
+            
+            space.mask = mask; // 不让天体飞出space
+            
+            // 添加随机按钮
+            var randomButton = new PIXI.Graphics();
+            randomButton.beginFill(0x8A2BE2);
+            randomButton.drawCircle(0, 0, 20);
+            randomButton.endFill();
+            randomButton.position.set(30, 30);
+            app.stage.addChild(randomButton);
+            randomButton.interactive = true;
+            randomButton.buttonMode = true;
+            randomButton.on('pointerdown', (event) => {
+                for (var i=0; i<50; i++)
+                {
+                    addPlanet(
+                        Math.random()*spaceBg.width,
+                        Math.random()*spaceBg.height + space.y,
+                        Math.random()*2 - 1,
+                        Math.random()*2 - 1
+                    );
+                }
+            });
+
+            // 添加环绕生成按钮
+            var circleButton = new PIXI.Graphics();
+            circleButton.beginFill(0x8A2BE2);
+            circleButton.drawCircle(0, 0, 20);
+            circleButton.endFill();
+            circleButton.beginFill(0x2F4F4F);
+            circleButton.drawCircle(0, 0, 15);
+            circleButton.endFill();
+            circleButton.position.set(120, 30);
+            circleButton.interactive = true;
+            circleButton.buttonMode = true;
+            circleButton.on('pointerdown', (event) => {
+                for (var i=0; i<50; i++)
+                    roundPlanet(
+                        Math.random()*spaceBg.width,
+                        Math.random()*spaceBg.height
+                    );
+            });
+            app.stage.addChild(circleButton);
+            
+            var singleCrclButton = new PIXI.Graphics();
+            singleCrclButton.beginFill(0x66CCFF);
+            singleCrclButton.drawCircle(0, 0, 20);
+            singleCrclButton.endFill();
+            singleCrclButton.beginFill(0x2F4F4F);
+            singleCrclButton.drawCircle(0, 0, 15);
+            singleCrclButton.endFill();
+            singleCrclButton.position.set(210, 30);
+            singleCrclButton.interactive = true;
+            singleCrclButton.buttonMode = true;
+            app.stage.addChild(singleCrclButton);
+            singleCrclButton.on('pointerdown', (event) => {
+                var minx = sun.x - 200;
+                var miny = sun.y - 200;
+                roundPlanet(Math.random()*400+minx, Math.random()*400+miny);
+            });
+
+            // 初速度使行星进入圆轨道
+            function roundPlanet(x, y)
+            {
+                var rx, ry, V, R, R2;
+                rx = sun.x - x;
+                ry = sun.y - y;
+                R2 = rx*rx + ry*ry;
+                R = Math.sqrt(R2);
+                V = Math.sqrt(G*sun.mass/Math.sqrt(R2));
+                if (Math.random() < 0.5)
+                    addPlanet(x, y, -ry*V/R, rx*V/R); // 逆时针
+                else
+                    addPlanet(x, y, ry*V/R, -rx*V/R); // 顺时针
+            }
+
+            // 添加清除按钮
+            var cleanButton = new PIXI.Graphics();
+            cleanButton.beginFill(0x7FFFAA);
+            cleanButton.drawCircle(0, 0, 20);
+            cleanButton.endFill();
+            cleanButton.position.set(spaceBg.width - 30, 30);
+            app.stage.addChild(cleanButton);
+            cleanButton.interactive = true;
+            cleanButton.buttonMode = true;
+            cleanButton.on('pointerdown', (event) => clean());
+
+            space.on('pointerdown', (event) => onClick(event.data.global));
+            space.on('pointerup', (event) => onRelease(event.data.global));
+
+            const G = 1.0;
+            let planetLst = new Array();
+
+            // 赞美太阳
+            let sun = new PIXI.Graphics();
+            sun.beginFill(0xffd700);
+            sun.radius = 25;
+            sun.drawCircle(0, 0, sun.radius);
+            sun.endFill();
+            sun.x = spaceBg.width / 2;
+            sun.y = spaceBg.height / 2;
+            sun.mass = 100;
+            space.addChild(sun);
+
+            var clickX, clickY;
+            function onClick(pos)
+            {
+                clickX = pos.x;
+                clickY = pos.y - space.y;
+            }
+
+            // 拖动决定速度
+            function onRelease(pos)
+            {
+                var vx = (pos.x - clickX)/100;
+                var vy = ((pos.y - space.y) - clickY)/100;
+                addPlanet(clickX, clickY, vx, vy);
+            }
+
+            function addPlanet(x, y, vx, vy)
+            {
+                var planet = new PIXI.Graphics();
+                planet.mass = 25 + Math.random()*10;
+                planet.radius = Math.sqrt(planet.mass);
+                planet.beginFill(Math.random()*0xFFFFFF);
+                planet.drawCircle(0, 0, planet.radius);
+                planet.endFill();
+                planet.x = x;
+                planet.y = y;
+                planet.vx = vx;
+                planet.vy = vy;
+                space.addChild(planet);
+                planetLst.push(planet);
+            }
+
+            // 清除所有天体
+            function clean()
+            {
+                for (var i=0; i<planetLst.length; i++)
+                {
+                    var p = planetLst[i];
+                    if (p == null) continue;
+                    planetLst[i] = null;
+                    p.destroy();
+                }
+                planetLst.length = 0;
+            }
+
+            app.ticker.add((delta) => {
+                for (var i=0; i<planetLst.length; i++)
+                {
+                    var planet = planetLst[i];
+                    if (planet == null) continue;
+
+                    if (overScreen(planet.x, planet.y, 100))
+                    {
+                        planetLst[i] = null;
+                        planet.destroy();
+                        console.log("OverScreen!");
+                        continue;
+                    }
+
+                    var rx = sun.x - planet.x;
+                    var ry = sun.y - planet.y;
+                    var R2 = rx*rx+ry*ry;
+                    var R = Math.sqrt(R2);
+                    var a = G*sun.mass/R2;
+
+                    if (R < sun.radius+planet.radius)
+                    {
+                        planetLst[i] = null;
+                        planet.destroy();
+                        continue;
+                    }
+
+                    planet.vx += rx*a/R;
+                    planet.vy += ry*a/R;
+                    planet.x += planet.vx;
+                    planet.y += planet.vy;
+                }
+            });
+
+            // 边界检测
+            function overScreen(x, y, edge)
+            {
+                if (x < -edge || x > spaceBg.width + edge
+                || y < -edge || y > spaceBg.height + edge
+                )
+                    return true;
+                return false;
+            }
+
+        </script>
+    </body>
+</html>
