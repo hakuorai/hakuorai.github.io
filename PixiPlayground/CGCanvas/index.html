@@ -1,0 +1,67 @@
+<!doctype html>
+<html>
+    <head>
+        <meta charset="utf-8">
+        <title>CGCanvas</title>
+    </head>
+    <script src="../pixi/pixi.min.js">
+    </script>
+    <style>* {padding: 0; margin: 0}</style>
+    <body>
+
+        <script src="CGcore.js"></script>
+        <script src="canvasframe.js"></script>
+        <script src="tools.js"></script>
+
+        <script type="text/javascript">
+            console.log("%cCGCanvas by Orai", "color:blue");
+            console.log("%cUse Ctrl+Shift+R to refresh after modifying any JS file included.", "color:yellow")
+            
+            // Create the application helper and add its render target to the page
+            let app = new PIXI.Application({ width: 512, height: 512, backgroundColor: 0x000048 });
+            document.body.appendChild(app.view);
+        
+            // 填充整个窗口
+            app.renderer.view.style.position = "absolute";
+            app.renderer.view.style.display = "block";
+            app.renderer.autoResize = true;
+            app.renderer.resize(window.innerWidth, window.innerHeight);
+
+            app.stage.sortableChildren = true; // 允许更改渲染顺序
+
+            // 创建画布
+            var canvas = createCanvas(window.innerWidth, window.innerHeight);
+            app.stage.addChild(canvas);
+
+            let toollist = [
+                createGrabTool(), 
+                createLineTool(), 
+                createCircleTool(),
+                createEllipseTool(),
+                createPolygonTool(),
+                createPolyTransformTool(),
+                
+                createBrushColorTool(),
+                createClsTool()
+            ];
+            let sidebar = createToolbar(app.stage, canvas, toollist, 10, 20, 50);
+
+            function onClick(pos, thisObj)
+            {
+                thisObj.clickPos = new Point(pos.x - thisObj.x, pos.y - thisObj.y);
+                thisObj.clickCanvas = true;
+            }
+
+            function onRelease(pos, thisObj)
+            {
+                if (!thisObj.clickCanvas) return;
+                
+                drawLine(thisObj, 
+                thisObj.clickPos,
+                new Point(pos.x - thisObj.x, pos.y - thisObj.y));
+                thisObj.clickCanvas = false;
+            }
+
+        </script>
+    </body>
+</html>
