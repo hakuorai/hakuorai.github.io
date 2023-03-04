@@ -1,0 +1,3 @@
+[submodule "sub_lopisharp"]
+	path = lopisharp
+	url = ../lab/interpreter/
