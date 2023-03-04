@@ -1,3 +1,4 @@
-[submodule "sub_lopisharp"]
+
+[submodule "lopisharp"]
 	path = lopisharp
-	url = ../lab/interpreter/
+	url = https://github.com/hakuorai/Lopisharp.git
